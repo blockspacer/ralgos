@@ -40,7 +40,7 @@ public:
     static void start(Executor&& et, Handler&& fn) {
         auto co = std::make_shared<coroutine>(et, fn);
         auto gd = boost::asio::make_work_guard(co->ex_);
-        boost::asio::post(et, [co, gd] () mutable {
+        boost::asio::post(co->ex_, [co, gd] () mutable {
             coroutine_handler ch(co);
             co->c1_ = boost::context::fiber([co, ch, gd] (boost::context::fiber&& c2) mutable {
                 co->c2_ = std::move(c2);

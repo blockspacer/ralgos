@@ -11,7 +11,8 @@ public:
     template <class ConstBufferSequence>
     void write(ConstBufferSequence && cbs, coroutine_handler& ch) {
         boost::asio::async_write(socket_, cbs, [this, &ch] (const boost::system::error_code& error, std::size_t nsent) {
-            if(error) std::cout << "failed to write reply: (" << error.value() << ") " << error.message() << "\n";
+            // if(error && error != boost::asio::error::eof && error != boost::asio::error::connection_reset)
+            //     std::cerr << "failed to write reply: (" << error.value() << ") " << error.message() << "\n";
             ch.resume();
         });
         ch.suspend();

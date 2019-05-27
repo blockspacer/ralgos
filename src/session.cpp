@@ -29,10 +29,10 @@ void session::run(coroutine_handler ch) {
     }
 
     if(error) {
-        std::cerr << "failed to read from socket: " << error.message() << "\n";
+        // std::cerr << "failed to read from socket: " << error.message() << "\n";
     }
     else if(reader_->err) {
-        std::cerr << "failed to parse redis proto: " << reader_->errstr << "\n";
+        // std::cerr << "failed to parse redis proto: " << reader_->errstr << "\n";
     }
 REQUEST_TYPE_ERROR:
     write(boost::asio::buffer("-WRONGTYPE Array of at least 2 Bulk String is required\r\n", 56), ch);
@@ -64,8 +64,8 @@ bool session::handle_request(redisReply* reply, coroutine_handler& ch) {
 
     std::string cmd = upper(req->element[0]->str, req->element[0]->len);
     auto h = G->svr->get(cmd);
-    coroutine::start(G->ctx().get_executor(), [h, req, this] (coroutine_handler ch) {
-        h->handle(req, shared_from_this(), ch);
+    coroutine::start(G->ctx().get_executor(), [h, req, self = shared_from_this()] (coroutine_handler ch) {
+        h->handle(req, self, ch);
     });
     return true;
 }
