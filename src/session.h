@@ -10,10 +10,12 @@ public:
     void run(coroutine_handler ch);
     template <class ConstBufferSequence>
     void write(ConstBufferSequence && cbs, coroutine_handler& ch) {
-        boost::asio::async_write(socket_, cbs, [this, &ch] (const boost::system::error_code& error, std::size_t nsent) {
-            // if(error && error != boost::asio::error::eof && error != boost::asio::error::connection_reset)
-            //     std::cerr << "failed to write reply: (" << error.value() << ") " << error.message() << "\n";
-            ch.resume();
+        boost::asio::post(sq_, [this, &ch, &cbs] () {
+            boost::asio::async_write(socket_, cbs, [this, &ch] (const boost::system::error_code& error, std::size_t nsent) {
+                // if(error && error != boost::asio::error::eof && error != boost::asio::error::connection_reset)
+                //     std::cerr << "failed to write reply: (" << error.value() << ") " << error.message() << "\n";
+                ch.resume();
+            });
         });
         ch.suspend();
     }
@@ -26,10 +28,9 @@ public:
 protected:
     bool handle_request(redisReply* req, coroutine_handler& ch);
 private:
-    boost::asio::executor*      context_;
+    boost::asio::io_context::strand  sq_;
     boost::asio::ip::tcp::socket socket_;
     redisReader*                 reader_;
-    char                         buffer_[256];
     // 单个 session 不会出现并行写入的场景
     // boost::asio::io_context::strand writer_; // 对 socket_ 写入的保护
 

@@ -6,6 +6,7 @@
 session::session(boost::asio::io_context& io)
 : socket_(io)
 , reader_(redisReaderCreate())
+, sq_(io)
 /*, writer_(io) */{
 
 }
@@ -24,10 +25,11 @@ void session::run(coroutine_handler ch) {
         size = socket_.async_read_some(boost::asio::buffer(data), ch[error]);
         if(error == boost::asio::error::eof || error == boost::asio::error::connection_reset) return;
         redisReaderFeed(reader_, data, size);
-        if(REDIS_OK != redisReaderGetReply(reader_, (void**)&reply)) break;
-        if(reply != nullptr && !handle_request(reply, ch)) goto REQUEST_TYPE_ERROR;
+        while(REDIS_OK == redisReaderGetReply(reader_, (void**)&reply)) {
+            if(reply == nullptr) break;
+            if(!handle_request(reply, ch)) goto REQUEST_TYPE_ERROR;
+        }
     }
-
     if(error) {
         // std::cerr << "failed to read from socket: " << error.message() << "\n";
     }
@@ -76,14 +78,16 @@ void session::reply(const char* val, std::size_t len, coroutine_handler& ch) {
 }
 
 void session::reply(std::string_view val, coroutine_handler& ch) {
-    size_t length = sprintf(buffer_, "$%ld\r\n", val.length());
-    std::vector<boost::asio::const_buffer> data = {{buffer_, length}, {val.data(), val.size()}, {"\r\n", 2}};
+    char   buffer[64];
+    size_t length = sprintf(buffer, "$%ld\r\n", val.length());
+    std::vector<boost::asio::const_buffer> data = {{buffer, length}, {val.data(), val.size()}, {"\r\n", 2}};
     write(data, ch);
 }
 
 void session::reply(int64_t val, coroutine_handler& ch) {
-    size_t length = std::sprintf(buffer_, ":%ld\r\n", val);
-    write(boost::asio::buffer(buffer_, length), ch);
+    char   buffer[64];
+    size_t length = std::sprintf(buffer, ":%ld\r\n", val);
+    write(boost::asio::buffer(buffer, length), ch);
 }
 
 void session::reply_error(std::string_view val, coroutine_handler& ch) {
