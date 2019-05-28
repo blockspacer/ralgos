@@ -36,7 +36,7 @@ void session::run(coroutine_handler ch) {
         // std::cerr << "failed to parse redis proto: " << reader_->errstr << "\n";
     }
 REQUEST_TYPE_ERROR:
-    write({"-WRONGTYPE Array of at least 2 Bulk String is required\r\n", 56}, ch);
+    write({"-WRONGTYPE Array of at least 1 Bulk String is required\r\n", 56}, ch);
 }
 
 static std::string upper(char* cmd, std::size_t len) {
@@ -54,7 +54,7 @@ bool session::handle_request(redisReply* reply) {
     // RESP Array consisting of just Bulk Strings
     switch(req->type) {
     case REDIS_REPLY_ARRAY:
-        if(req->elements < 2) return false;
+        if(req->elements < 1) return false;
     break;
     default:
         return false;
