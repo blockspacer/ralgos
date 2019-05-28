@@ -5,6 +5,7 @@
 #include "handler.h"
 #include "handler/unknown.h"
 #include "handler/dummy.h"
+#include "handler/ping.h"
 #include "handler/address.h"
 #include "handler/segment.h"
 
@@ -15,7 +16,7 @@ server::server()
     std::shared_ptr<handler> dummy = std::make_shared<handler_dummy>();
     hdl_["AUTH"]    = dummy;
     hdl_["SELECT"]  = dummy;
-    hdl_["PING"]    = dummy;
+    hdl_["PING"]    = std::make_shared<handler_ping>();
     hdl_["ADDRESS"] = std::make_shared<handler_address>();
     hdl_["SEGMENT"] = std::make_shared<handler_segment>();
     // hdl_["ADDRESS"] = dummy;
